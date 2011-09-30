@@ -14,7 +14,7 @@ DRIVER := w83627ehf
 
 # Directory below /lib/modules/$(TARGET)/kernel into which to install
 # the module:
-MOD_SUBDIR = drivers/misc
+MOD_SUBDIR = drivers/hwmon
 
 obj-m	:= $(DRIVER).o
 
@@ -27,7 +27,7 @@ all: modules
 # Targets for running make directly in the external module directory:
 
 modules clean:
-	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) EXTRA_CFLAGS=-I$(CURDIR)/include $@
+	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) $@
 
 install: modules_install
 
