@@ -1288,6 +1288,47 @@ show_temp_type(struct device *dev, struct device_attribute *attr, char *buf)
 	return sprintf(buf, "%d\n", (int)data->temp_type[nr]);
 }
 
+static ssize_t
+store_temp_type(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	struct w83627ehf_data *data = dev_get_drvdata(dev);
+	struct w83627ehf_sio_data *sio_data = dev->platform_data;
+	struct sensor_device_attribute *sensor_attr =
+		to_sensor_dev_attr(attr);
+	int nr = sensor_attr->index;
+	int err;
+	long val;
+	u8 tmp;
+
+	/* only NCT6775F and NCT6776F for now */
+	if (sio_data->kind != nct6775 && sio_data->kind != nct6776)
+		return -EACCES;
+
+	err = kstrtol(buf, 10, &val);
+	if (err < 0)
+		return err;
+
+	/* only support diode(1) and thermistor(4) */
+	if (val != 1 && val != 4)
+		return -EINVAL;
+
+	/* and only if one of the two is already set */
+	if (data->temp_type[nr] != 1 && data->temp_type[nr] != 4
+	    && val != data->temp_type[nr])
+		return -EINVAL;
+
+	mutex_lock(&data->update_lock);
+	data->temp_type[nr] = val;
+	tmp = w83627ehf_read_value(data, W83627EHF_REG_VBAT);
+	tmp &= ~(0x02 << nr);
+	if (val == 1)
+		tmp |= (0x02 << nr);
+	w83627ehf_write_value(data, W83627EHF_REG_VBAT, tmp);
+	mutex_unlock(&data->update_lock);
+	return count;
+}
+
 static struct sensor_device_attribute sda_temp_input[] = {
 	SENSOR_ATTR(temp1_input, S_IRUGO, show_temp, NULL, 0),
 	SENSOR_ATTR(temp2_input, S_IRUGO, show_temp, NULL, 1),
@@ -1361,9 +1402,12 @@ static struct sensor_device_attribute sda_temp_alarm[] = {
 };
 
 static struct sensor_device_attribute sda_temp_type[] = {
-	SENSOR_ATTR(temp1_type, S_IRUGO, show_temp_type, NULL, 0),
-	SENSOR_ATTR(temp2_type, S_IRUGO, show_temp_type, NULL, 1),
-	SENSOR_ATTR(temp3_type, S_IRUGO, show_temp_type, NULL, 2),
+	SENSOR_ATTR(temp1_type, S_IRUGO | S_IWUSR, show_temp_type,
+		    store_temp_type, 0),
+	SENSOR_ATTR(temp2_type, S_IRUGO | S_IWUSR, show_temp_type,
+		    store_temp_type, 1),
+	SENSOR_ATTR(temp3_type, S_IRUGO | S_IWUSR, show_temp_type,
+		    store_temp_type, 2),
 };
 
 static struct sensor_device_attribute sda_temp_offset[] = {
