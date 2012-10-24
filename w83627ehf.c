@@ -61,17 +61,7 @@
 #include <linux/io.h>
 #include "lm75.h"
 
-#ifndef pr_warn
-#define pr_warn pr_warning
-#endif
-
-#ifndef kstrtoul
-#define kstrtoul strict_strtoul
-#endif
-
-#ifndef kstrtol
-#define kstrtol strict_strtol
-#endif
+#include "compat.h"
 
 enum kinds {
 	w83627ehf, w83627dhg, w83627dhg_p, w83627uhg,
