@@ -16,7 +16,8 @@ DRIVER := w83627ehf
 # the module:
 MOD_SUBDIR = drivers/hwmon
 
-obj-m	:= $(DRIVER).o
+obj-m	:= $(patsubst %,%.o,$(DRIVER))
+obj-ko  := $(patsubst %,%.ko,$(DRIVER))
 
 MAKEFLAGS += --no-print-directory
 
